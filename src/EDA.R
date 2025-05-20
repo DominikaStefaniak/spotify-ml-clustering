@@ -3,12 +3,10 @@ library(readr)
 library(tidyverse)
 
 # Import the data
-df <- readr::read_csv(
-  "data/spotify-2023.csv",
-  locale = readr::locale(encoding = "Windows-1252", grouping_mark = ","),
-  col_types = cols(
-    streams = col_double()
-  )
+df <- read_csv(
+  "../data/spotify-2023.csv",
+  locale = locale(encoding = "ISO-8859-2", grouping_mark = ","), 
+  col_types = cols(streams = col_double())
 )
 
 # Check if the data import was correct
@@ -24,7 +22,7 @@ colSums(is.na(df))
 (duplicates <- df[duplicated(df), ])
 
 # Distribution of categorical variables
-(categorical_df <- df[, sapply(df, is.character)])
+(categorical_df <- df[, c("key", "mode")])
 
 categorical_df_long <- categorical_df %>%
   pivot_longer(cols = everything(), names_to = "variable", values_to = "value")
@@ -34,6 +32,29 @@ ggplot(categorical_df_long, aes(x = value)) +
   facet_wrap(~ variable, scales = "free_y") +  
   labs(title = "Distribution of Categorical Columns", x = "Category", y = "Count") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Distribution of artist
+count_individual_artists_df <- function(df, col_name = "artist(s)_name") {
+  artists_raw <- df[[col_name]]
+  
+  individual_artists <- unlist(strsplit(artists_raw, ","))
+  
+  individual_artists <- trimws(individual_artists)
+  
+  artist_counts <- table(individual_artists)
+  
+  artist_df <- as.data.frame(artist_counts, stringsAsFactors = FALSE)
+  colnames(artist_df) <- c("artist", "count")
+  artist_df <- artist_df[order(-artist_df$count), ]
+  
+  return(artist_df)
+}
+
+artist_counts_df <- count_individual_artists_df(df)
+
+ggplot(head(artist_counts_df, 20), aes(x = count, y = reorder(artist, count))) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(title = "Top 20 Most Frequent Artists", x = "Artist", y = "Count")
 
 # Box plots to check basic statistics
 (numeric_df <- df[, sapply(df, is.numeric)])
@@ -60,6 +81,12 @@ ggplot(cor_data, aes(Var1, Var2, fill = Freq)) +
   labs(title = "Correlation Heatmap", x = "Variable", y = "Variable", fill = "Correlation")
 
 # Summary
-# 1. Categorical columns need to be encoded.
-# 2. There are duplicates.
-# ...
+# 1. Track name is a unique identifier.
+# 2. Categorical columns - "key" and "mode" need to be encoded.
+# 3. Encode only artists with the most occurrences for example above 10.
+# 4. There are no duplicates.
+# 5. There are some missing values:
+#       - in "key" create a new category - unknown, 
+#       - in shazam charts set the values to 0,
+#       - the 1 one missing observation in "streams" may be deleted.
+# 6. Correlations are all logical. Biggest correlations are between columns refering to music streaming platforms.
