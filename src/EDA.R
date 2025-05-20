@@ -22,16 +22,28 @@ colSums(is.na(df))
 (duplicates <- df[duplicated(df), ])
 
 # Distribution of categorical variables
-(categorical_df <- df[, c("key", "mode")])
+plot_categorical_distribution <- function(df, column_name) {
+  freq_table <- table(df[[column_name]])
+  
+  plot_df <- as.data.frame(freq_table)
+  colnames(plot_df) <- c("Category", "Count")
+  
+  ggplot(plot_df, aes(x = Category, y = Count)) +
+    geom_bar(stat = "identity", fill = "#69b3a2") +
+    labs(
+      title = paste("Distribution of", column_name),
+      x = column_name,
+      y = "Count"
+    ) +
+    theme_minimal() +
+    theme(
+      axis.text.x = element_text(angle = 45, hjust = 1)
+    )
+}
 
-categorical_df_long <- categorical_df %>%
-  pivot_longer(cols = everything(), names_to = "variable", values_to = "value")
+plot_categorical_distribution(df, "key")
 
-ggplot(categorical_df_long, aes(x = value)) +
-  geom_bar() +
-  facet_wrap(~ variable, scales = "free_y") +  
-  labs(title = "Distribution of Categorical Columns", x = "Category", y = "Count") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+plot_categorical_distribution(df, "mode")
 
 # Distribution of artist
 count_individual_artists_df <- function(df, col_name = "artist(s)_name") {
