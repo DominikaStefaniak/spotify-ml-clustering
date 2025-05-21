@@ -18,6 +18,7 @@ plot_categorical_distribution <- function(df, column_name) {
     )
 }
 
+# Counting occurrences of all categories
 count_individual_categories_df <- function(df, col_name) {
   raw <- df[[col_name]]
   
@@ -32,4 +33,17 @@ count_individual_categories_df <- function(df, col_name) {
   count_df <- count_df[order(-count_df$count), ]
   
   return(count_df)
+}
+
+# Encoding categories
+one_hot_encode <- function(df, column_name) {
+  df[[column_name]] <- as.factor(df[[column_name]])
+  
+  dummies <- model.matrix(~ . - 1, data = df[column_name])
+  dummies <- as.data.frame(dummies)
+  
+  df <- df[, !(names(df) %in% column_name)]
+  df <- cbind(df, dummies)
+  
+  return(df)
 }
