@@ -1,6 +1,7 @@
 library(skimr)
 library(readr)
 library(tidyverse)
+source("utils.R")
 
 # Import the data
 df <- read_csv(
@@ -22,47 +23,12 @@ colSums(is.na(df))
 (duplicates <- df[duplicated(df), ])
 
 # Distribution of categorical variables
-plot_categorical_distribution <- function(df, column_name) {
-  freq_table <- table(df[[column_name]])
-  
-  plot_df <- as.data.frame(freq_table)
-  colnames(plot_df) <- c("Category", "Count")
-  
-  ggplot(plot_df, aes(x = Category, y = Count)) +
-    geom_bar(stat = "identity", fill = "#69b3a2") +
-    labs(
-      title = paste("Distribution of", column_name),
-      x = column_name,
-      y = "Count"
-    ) +
-    theme_minimal() +
-    theme(
-      axis.text.x = element_text(angle = 45, hjust = 1)
-    )
-}
-
 plot_categorical_distribution(df, "key")
 
 plot_categorical_distribution(df, "mode")
 
 # Distribution of artist
-count_individual_artists_df <- function(df, col_name = "artist(s)_name") {
-  artists_raw <- df[[col_name]]
-  
-  individual_artists <- unlist(strsplit(artists_raw, ","))
-  
-  individual_artists <- trimws(individual_artists)
-  
-  artist_counts <- table(individual_artists)
-  
-  artist_df <- as.data.frame(artist_counts, stringsAsFactors = FALSE)
-  colnames(artist_df) <- c("artist", "count")
-  artist_df <- artist_df[order(-artist_df$count), ]
-  
-  return(artist_df)
-}
-
-artist_counts_df <- count_individual_artists_df(df)
+artist_counts_df <- count_individual_categories_df(df, "artist(s)_name")
 
 ggplot(head(artist_counts_df, 20), aes(x = count, y = reorder(artist, count))) +
   geom_bar(stat = "identity", fill = "steelblue") +
