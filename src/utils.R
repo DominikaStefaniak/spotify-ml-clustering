@@ -47,3 +47,21 @@ one_hot_encode <- function(df, column_name) {
   
   return(df)
 }
+
+# PCA implementation
+reduce_with_optimal_pca <- function(data, cols, n_clusters = 4, max_pc = min(length(cols), 10)) {
+  data_subset <- data[, cols, drop = FALSE]
+  pca <- prcomp(data_subset, scale. = TRUE)
+  
+  scores <- sapply(1:max_pc, function(k) {
+    pca_data <- pca$x[, 1:k, drop = FALSE]
+    km <- kmeans(pca_data, centers = n_clusters, nstart = 25)
+    sil <- silhouette(km$cluster, dist(pca_data))
+    mean(sil[, 3])
+  })
+  
+  best_k <- which.max(scores)
+  reduced_data <- as.data.frame(pca$x[, 1:best_k, drop = FALSE])
+  colnames(reduced_data) <- paste0("PC", 1:best_k)
+  return(reduced_data)
+}

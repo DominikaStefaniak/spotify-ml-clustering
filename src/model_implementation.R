@@ -1,8 +1,8 @@
 library(skimr)
 library(readr)
 library(tidyverse)
-library(purrr)
-library(ggplot2)
+library(cluster)
+library(clusterCrit)
 source("utils.R")
 
 # Import the data
@@ -14,41 +14,51 @@ df <- read_csv(
 glimpse(df)
 
 # Steps
-# 1. Scaling
-# 2. Train-test split
-# 3. Looking for the most optimal number of clusters
-# 4. Model Implementation
-# 5. Model evaluation
+# 1. Scaling and pca
+# 2. Looking for the most optimal number of clusters
+# 3. Model Implementation
+# 4. Model evaluation
 
 # 1
-# Leave binary columns, drop unique identifier, scale the rest
-binary_cols <- sapply(df, function(col) all(unique(col) %in% c(0,1)))
+# Reduce dimensionality, drop unique identifier, scale the rest of continous columns
+#pca
+playlist_chart_cols <- df %>% select(matches("in_.*_(playlists|charts)")) %>% colnames()
+reduced_playlists <- reduce_with_optimal_pca(df, playlist_chart_cols)
+colnames(reduced_playlists) <- "playlists_and_charts"
 
-cont_cols <- setdiff(names(df)[sapply(df, is.numeric)], names(binary_cols)[binary_cols])
+artist_cols <- df %>% select(starts_with("artist_encoded")) %>% colnames()
+reduced_artists <- reduce_with_optimal_pca(df, artist_cols)
+colnames(reduced_artists) <- c("artists1", "artists2", "artists3")
 
-scaled_cont <- scale(df[cont_cols])
+key_cols <- df %>% select(starts_with("key")) %>% colnames()
+reduced_keys <- reduce_with_optimal_pca(df, key_cols)
+colnames(reduced_keys) <- c("keys1", "keys2")
 
-df <- cbind(as.data.frame(scaled_cont), df[binary_cols])
+#scaling
+excluded_cols <- c(playlist_chart_cols, artist_cols, key_cols, "track_name")
+
+df_for_scaling <- df %>% select(-any_of(excluded_cols))
+
+robust_scale <- function(x) {
+  iqr <- IQR(x, na.rm = TRUE)
+  if (iqr == 0 || is.na(iqr)) return(NULL)
+  (x - median(x, na.rm = TRUE)) / iqr
+}
+
+scaled_list <- lapply(df_for_scaling, robust_scale)
+
+scaled_list_filtered <- scaled_list[!sapply(scaled_list, is.null)]
+
+(scaled_df <- cbind(as.data.frame(scaled_list_filtered), reduced_artists, reduced_keys, reduced_playlists))
+
 
 # 2
-# Split 80:20
-set.seed(123)
-
-sample_indices <- sample(seq_len(nrow(scaled_data)), size = 0.8 * nrow(scaled_data))
-
-train_data <- scaled_data[sample_indices, ]
-test_data <- scaled_data[-sample_indices, ]
-
-# 3
 # Find the optimal number of clusters using the Elbow Method
 wss <- map_dbl(1:10, function(k) {
-  kmeans(final_data, centers = k, nstart = 25)$tot.withinss
+  kmeans(scaled_df, centers = k, nstart = 25)$tot.withinss
 })
 
-elbow_df <- data.frame(
-  k = 1:10,
-  wss = wss
-)
+elbow_df <- data.frame(k = 1:10, wss = wss)
 
 ggplot(elbow_df, aes(x = k, y = wss)) +
   geom_point(size = 3) +
@@ -57,13 +67,10 @@ ggplot(elbow_df, aes(x = k, y = wss)) +
   labs(title = "Elbow Method to Determine Optimal Number of Clusters",
        x = "Number of Clusters (k)",
        y = "Total Within-Clusters Sum of Squares (WSS)")
-# The "elbow" point: 4
 
-# 4
-# Implement kmeans with k = 4
-kmeans_model <- kmeans(train_data, centers = 4, nstart = 25)
+# The "elbow" point: 2
 
-# 5
-
-
- 
+# 3
+# Implement kmeans with k = 2
+set.seed(123)
+kmeans_model <- kmeans(scaled_df, centers = 2, nstart = 10)

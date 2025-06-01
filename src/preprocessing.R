@@ -19,7 +19,8 @@ glimpse(df)
 # 3. Delete 1 observation with missing "streams" value.
 # 4. Encode categorical "key" and "mode".
 # 5. Encode artists with above 10 occurrences.
-# 6. Save preprocessed dataframe.
+# 6. Combine release date columns.
+# 7. Save preprocessed dataframe.
 
 # 1
 df$key[is.na(df$key) | df$key == ""] <- "unknown"
@@ -52,4 +53,14 @@ df <- one_hot_encode(df, "artist_encoded")
 df <- df %>% select(-`artist(s)_name`)
 
 # 6
+df$release_date <- as.Date(
+  paste(df$released_year, df$released_month, df$released_day, sep = "-"),
+  format = "%Y-%m-%d"
+)
+
+df$release_date <- as.numeric(df$release_date)
+
+df <- df %>% select(-released_year, -released_month, -released_day)
+
+# 7
 write.csv(df, "../data/preprocessed-spotify-2023.csv", row.names = FALSE)
