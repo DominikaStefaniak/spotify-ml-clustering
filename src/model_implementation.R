@@ -74,3 +74,19 @@ ggplot(elbow_df, aes(x = k, y = wss)) +
 # Implement kmeans with k = 2
 set.seed(123)
 kmeans_model <- kmeans(scaled_df, centers = 2, nstart = 10)
+
+# 4
+# Evaluation using different metrics
+# Silhouette Score
+sil <- silhouette(kmeans_model$cluster, dist(scaled_df))
+avg_silhouette <- mean(sil[, 3])
+cat("Average Silhouette Score: ", avg_silhouette)
+
+# Calinski-Harabasz Index
+scaled_matrix <- as.matrix(scaled_df)
+ch_index <- intCriteria(traj = scaled_matrix, part = kmeans_model$cluster, crit = "Calinski_Harabasz")
+cat("Calinski-Harabasz Index: ", ch_index$calinski_harabasz, "\n")
+
+# Davies-Bouldin Index
+db_index <- intCriteria(traj = scaled_matrix, part = kmeans_model$cluster, crit = "Davies_Bouldin")
+cat("Davies-Bouldin Index: ", db_index$davies_bouldin, "\n")
