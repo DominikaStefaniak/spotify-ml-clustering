@@ -30,7 +30,7 @@ plot_categorical_distribution(df, "mode")
 # Distribution of artist
 artist_counts_df <- count_individual_categories_df(df, "artist(s)_name")
 
-ggplot(head(artist_counts_df, 20), aes(x = count, y = reorder(artist, count))) +
+ggplot(head(artist_counts_df, 20), aes(x = count, y = reorder(category, count))) +
   geom_bar(stat = "identity", fill = "steelblue") +
   labs(title = "Top 20 Most Frequent Artists", x = "Artist", y = "Count")
 
@@ -61,10 +61,11 @@ ggplot(cor_data, aes(Var1, Var2, fill = Freq)) +
 # Summary
 # 1. Track name is a unique identifier.
 # 2. Categorical columns - "key" and "mode" need to be encoded.
-# 3. Encode only artists with the most occurrences for example above 10.
+# 3. Encode only artists with the most occurrences, for example, above 10.
 # 4. There are no duplicates.
 # 5. There are some missing values:
-#       - in "key" create a new category - unknown, 
-#       - in shazam charts set the values to 0,
-#       - the 1 one missing observation in "streams" may be deleted.
-# 6. Correlations are all logical. Biggest correlations are between columns refering to music streaming platforms.
+#       - in "key", create a new category - unknown, 
+#       - in shazam charts, set the values to 0,
+#       - the single missing observation in "streams" may be deleted.
+# 6. Correlations are logical. The strongest correlations are between columns referring to music streaming platforms.
+# 7. Scale using a robust scaler, due to the presence of outliers.

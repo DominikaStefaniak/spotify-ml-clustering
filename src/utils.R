@@ -65,3 +65,10 @@ reduce_with_optimal_pca <- function(data, cols, n_clusters = 4, max_pc = min(len
   colnames(reduced_data) <- paste0("PC", 1:best_k)
   return(reduced_data)
 }
+
+# Robust scaling
+robust_scale <- function(x) {
+  iqr <- IQR(x, na.rm = TRUE)
+  if (iqr == 0 || is.na(iqr)) return(NULL)
+  (x - median(x, na.rm = TRUE)) / iqr
+}

@@ -14,14 +14,14 @@ df <- read_csv(
 glimpse(df)
 
 # Steps
-# 1. Scaling and pca
+# 1. Scaling and PCA
 # 2. Looking for the most optimal number of clusters
 # 3. Model Implementation
 # 4. Model evaluation
 
 # 1
-# Reduce dimensionality, drop unique identifier, scale the rest of continous columns
-#pca
+# Reduce dimensionality, drop unique identifier, scale the rest of the columns
+# PCA
 playlist_chart_cols <- df %>% select(matches("in_.*_(playlists|charts)")) %>% colnames()
 reduced_playlists <- reduce_with_optimal_pca(df, playlist_chart_cols)
 colnames(reduced_playlists) <- "playlists_and_charts"
@@ -34,23 +34,18 @@ key_cols <- df %>% select(starts_with("key")) %>% colnames()
 reduced_keys <- reduce_with_optimal_pca(df, key_cols)
 colnames(reduced_keys) <- c("keys1", "keys2")
 
-#scaling
+# Scaling with robust scaler to reduce the impact of outliers
 excluded_cols <- c(playlist_chart_cols, artist_cols, key_cols, "track_name")
 
 df_for_scaling <- df %>% select(-any_of(excluded_cols))
-
-robust_scale <- function(x) {
-  iqr <- IQR(x, na.rm = TRUE)
-  if (iqr == 0 || is.na(iqr)) return(NULL)
-  (x - median(x, na.rm = TRUE)) / iqr
-}
 
 scaled_list <- lapply(df_for_scaling, robust_scale)
 
 scaled_list_filtered <- scaled_list[!sapply(scaled_list, is.null)]
 
-(scaled_df <- cbind(as.data.frame(scaled_list_filtered), reduced_artists, reduced_keys, reduced_playlists))
+scaled_df <- cbind(as.data.frame(scaled_list_filtered), reduced_artists, reduced_keys, reduced_playlists)
 
+summary(scaled_df)
 
 # 2
 # Find the optimal number of clusters using the Elbow Method
